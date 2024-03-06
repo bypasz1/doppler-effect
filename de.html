@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Efeito Doppler</title>
+    <style>
+        #road {
+            position: absolute;
+            width: 100%;
+            height: 5px;
+            background: #000;
+            top: 60%;
+        }
+
+        .car {
+            width: 30px;
+            height: 20px;
+            position: absolute;
+            left: 0px;
+            top: 55%;
+            font-size: 20px;
+        }
+
+        .person {
+            width: 20px;
+            height: 20px;
+            position: absolute;
+            left: 50%;
+            top: 45%;
+            font-size: 20px;
+        }
+    </style>
+</head>
+<body>
+    <button id="play">Play</button>
+    <button id="pause">Pause</button>
+    <label for="frequency">Frequência: </label>
+    <input type="number" id="frequency" value="200">
+    <br>
+    <label for="speed">Velocidade do Carro:</label>
+    <input type="number" id="speed">
+    <div id="car" class="car">🚗</div>
+    <div id="person" class="person">👤</div>
+    <div id="road"></div>
+    <div id="circle"></div>
+    <div id="freqLabel"></div>
+
+    <script>
+        var context;
+        var oscillator;
+        var gainNode;
+        var frequencyInput;
+        var speedInput;
+        var car;
+        var person;
+        var play;
+        var pause;
+        var circle;
+        var freqLabel;
+        var playing = false;
+        var carSpeed = 1.5; // Velocidade padrão do carro
+
+        function init() {
+            context = new (window.AudioContext || window.webkitAudioContext)();
+            oscillator = context.createOscillator();
+            gainNode = context.createGain();
+
+            oscillator.connect(gainNode);
+            gainNode.connect(context.destination);
+
+            frequencyInput = document.getElementById('frequency');
+            speedInput = document.getElementById('speed');
+            car = document.getElementById('car');
+            person = document.getElementById('person');
+            play = document.getElementById('play');
+            pause = document.getElementById('pause');
+            circle = document.getElementById('circle');
+            freqLabel = document.getElementById('freqLabel');
+
+            play.addEventListener('click', function() {
+                if (!playing) {
+                    context.resume().then(function() {
+                        oscillator.start(0);
+                        playing = true;
+                        car.style.left = '0px';
+                        moveCar();
+                    });
+                }
+            });
+
+            pause.addEventListener('click', function() {
+                if (playing) {
+                    playing = false;
+                    oscillator.stop();
+                    location.reload();
+                }
+            });
+
+            frequencyInput.addEventListener('change', function() {
+                oscillator.frequency.value = frequencyInput.value;
+            });
+
+            speedInput.addEventListener('change', function() {
+                carSpeed = Math.max(0.1, parseFloat(speedInput.value)); // Impedir velocidade menor que 0.1
+                speedInput.value = carSpeed.toFixed(2); // Manter duas casas decimais
+            });
+        }
+
+        function moveCar() {
+            if (!playing) return;
+            var rect = car.getBoundingClientRect();
+            var width = window.innerWidth || document.documentElement.clientWidth || document.body.clientWidth;
+            var center = width / 2;
+            var distance = Math.abs(center - rect.left);
+            var range = center;
+            var percent = distance / range; // Alteração aqui
+            var freq = (1 - percent) * (frequencyInput.value - frequencyInput.value / 2) + frequencyInput.value / 2; // Alteração aqui
+            oscillator.frequency.value = freq;
+            car.style.left = (rect.left + carSpeed) % width + 'px'; // Aumente a velocidade do carro aqui
+            var circleSize = freq; // Alteração aqui
+            circle.style.width = circleSize + 'px';
+            circle.style.height = circleSize + 'px';
+            circle.style.borderRadius = '50%';
+            circle.style.position = 'absolute';
+            circle.style.border = '1px solid black';
+            circle.style.left = rect.left - circleSize / 2.65 + 'px';
+            circle.style.top = 'calc(50% - ' + circleSize / 2 + 'px + 60px)'; // Alteração aqui
+            freqLabel.innerHTML = 'Frequência: ' + Math.round(freq) + 'Hz';
+            freqLabel.style.position = 'absolute';
+            freqLabel.style.left = rect.left + 'px';
+            freqLabel.style.top = 'calc(50% - ' + circleSize / 2 + 'px - 20px)';
+            requestAnimationFrame(moveCar);
+        }
+
+        window.addEventListener('DOMContentLoaded', init);
+    </script>
+</body>
+</html>
